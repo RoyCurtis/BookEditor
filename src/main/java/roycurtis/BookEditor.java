@@ -5,15 +5,14 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import net.minecraft.client.Minecraft;
+import java.lang.reflect.Field;
 import net.minecraft.client.gui.GuiScreenBook;
-import net.minecraft.init.Items;
-import net.minecraft.item.Item;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
 
 @Mod(modid = BookEditor.MODID, version = BookEditor.VERSION)
 public class BookEditor
@@ -27,22 +26,46 @@ public class BookEditor
     {
         MinecraftForge.EVENT_BUS.register(this);
         FMLCommonHandler.instance().bus().register(this);
+        LOGGER.info("Registered events");
+        
         LOGGER.info("Loaded version %s", VERSION);
     }
     
     @SubscribeEvent
     public void onGuiOpen(GuiOpenEvent event)
     {
-        LOGGER.debug("Open GUI event: %s", event.gui);
+        LOGGER.info("Open GUI event: %s", event.gui);
         
         if ( !(event.gui instanceof GuiScreenBook) )
             return;
 
-        LOGGER.debug("Intercepting book open GUI");
+        LOGGER.info("Intercepting book open GUI");
 
         GuiScreenBook old = (GuiScreenBook) event.gui;
         
-        GuiScreenBookExtra gui = new GuiScreenBookExtra(old.editingPlayer, old.bookObj, old.bookIsUnsigned);
-        event.gui = gui;
+        Class<GuiScreenBook> guiClass = GuiScreenBook.class;
+        
+        try
+        {
+            Field fieldPlayer   = guiClass.getDeclaredField("field_146468_g");
+            Field fieldStack    = guiClass.getDeclaredField("field_146474_h");
+            Field fieldUnsigned = guiClass.getDeclaredField("field_146475_i");
+            
+            fieldPlayer.setAccessible(true);
+            fieldStack.setAccessible(true);
+            fieldUnsigned.setAccessible(true);
+            LOGGER.info("Tampered with GuiScreenBook");
+
+            GuiScreenBookExtra gui = new GuiScreenBookExtra(
+                (EntityPlayer) fieldPlayer.get(old),
+                (ItemStack)    fieldStack.get(old),
+                               fieldUnsigned.getBoolean(old)
+            );
+            event.gui = gui;
+        }
+        catch (Exception ex)
+        {
+            LOGGER.error("Could not get data from GuiScreenBook", ex);
+        }        
     }
 }

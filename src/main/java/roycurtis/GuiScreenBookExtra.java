@@ -11,7 +11,7 @@ public class GuiScreenBookExtra extends GuiScreenBook
     {
         super(player, book, writable);
         
-        BookEditor.LOGGER.trace("Opened BookEditor GUI");
+        BookEditor.LOGGER.info("Opened BookEditor GUI");
     }
        
 }
