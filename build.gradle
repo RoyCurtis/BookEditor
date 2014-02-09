@@ -45,5 +45,33 @@ processResources
 jar {
     // Sets the output directory of the mod's jar file
     destinationDir = file 'output'
+}
 
+task runClient(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = "net.minecraft.launchwrapper.Launch"
+    args("--version", "1.6",
+        "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker",
+        "--accessToken", "FML")
+    jvmArgs("-Xincgc",
+        "-Xmx1024M",
+        "-Xms1024M",
+        "-Djava.library.path=${project.buildDir}/natives",
+        "-Dfml.ignoreInvalidMinecraftCertificates=true")
+    workingDir("eclipse")
+}
+
+task debugClient(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = "net.minecraft.launchwrapper.Launch"
+    args("--version", "1.6",
+        "--tweakClass", "cpw.mods.fml.common.launcher.FMLTweaker",
+        "--accessToken", "FML")
+    jvmArgs("-Xincgc",
+        "-Xmx1024M",
+        "-Xms1024M",
+        "-Djava.library.path=${project.buildDir}/natives",
+        "-Dfml.ignoreInvalidMinecraftCertificates=true")
+    workingDir("eclipse")
+    debug = true
 }
