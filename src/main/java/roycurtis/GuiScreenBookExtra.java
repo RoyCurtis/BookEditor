@@ -5,9 +5,11 @@ import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.minecraft.client.Minecraft;
@@ -83,9 +85,9 @@ public class GuiScreenBookExtra extends GuiScreen
         
         if (bookObj.hasTagCompound())
         {
-            NBTTagCompound localNBTTagCompound = bookObj.getTagCompound();
+            NBTTagCompound bookTag = bookObj.getTagCompound();
             
-            bookPages = localNBTTagCompound.getTagList("pages", 8);
+            bookPages = bookTag.getTagList("pages", 8);
             
             if (bookPages != null)
             {
@@ -280,6 +282,8 @@ public class GuiScreenBookExtra extends GuiScreen
                 break;
                 
             case ACTION_IMPORT:
+                if (bookIsUnsigned)
+                    importBook();
                 break;
                 
             case ACTION_EXPORT:
@@ -488,15 +492,14 @@ public class GuiScreenBookExtra extends GuiScreen
             for (int i = 0; i < bookTotalPages; i++)
             {
                 String fileName = String.format("Books%d.txt", i);
-                File export     = new File(BookEditor.ConfigDir, fileName);
+                File exportFile = new File(BookEditor.ConfigDir, fileName);
                 
-                FileWriter writer = new FileWriter(export);
+                FileWriter writer = new FileWriter(exportFile);
                 writer.write( bookPages.getStringTagAt(i) );
-                
                 writer.close();
             }
             
-            infoLine = String.format( "Successfully wrote %d files (%s)", bookTotalPages, new Date() );
+            infoLine = String.format( "Successfully wrote %d files (%s)", bookTotalPages, new Date() );            
         }
         catch (IOException ex)
         {
@@ -506,7 +509,52 @@ public class GuiScreenBookExtra extends GuiScreen
     
     private void importBook()
     {
-        
+        try
+        {
+            int i;
+            
+            NBTTagList importedPages = new NBTTagList();
+            
+            for (i = 0; i < 50; i++)
+            {
+                String fileName = String.format("Books%d.txt", i);
+                File importFile = new File(BookEditor.ConfigDir, fileName);
+                
+                if ( !importFile.exists() )
+                    break;
+                
+                Scanner reader = new Scanner(importFile);
+                String  page   = reader.useDelimiter("\\A").next().replace("\r", "");
+                
+                if (page.length() >= 256)
+                {
+                    infoLine = EnumChatFormatting.RED + String.format("Page %d has too many characters (limit 255)", i);
+                    reader.close();
+                    return;            
+                }
+                
+                importedPages.appendTag( new NBTTagString(page) );
+
+                reader.close();
+            }
+            
+            if (i == 0)
+            {
+                infoLine = EnumChatFormatting.GOLD + "No pages were found";
+                return;
+            }
+            
+            bookPages      = importedPages;
+            bookTotalPages = i;
+            currPage       = 0;
+            
+            sendBookToServer(false);
+            infoLine = String.format( "Successfully imported %d (out of 50 max) pages (%s)", i, new Date() );
+        }
+        catch (IOException ex)
+        {
+            infoLine = EnumChatFormatting.RED + "Could not import book:\n" + ex.getMessage();
+        }
     }
 
     @SideOnly(Side.CLIENT)
