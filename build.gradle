@@ -17,14 +17,15 @@ buildscript {
 
 apply plugin: 'forge'
 
-version = "1.0"
-group= "com.yourname.modid" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "modid"
+version = "0.1.10"
+group= "roycurtis.BookEditor" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "BookEditor"
 
 minecraft {
     version = "1.7.2-10.12.0.1025"
     assetDir = "eclipse/assets"
 }
+
 processResources
 {
     // replace stuff in mcmod.info, nothing else
@@ -39,4 +40,10 @@ processResources
     from(sourceSets.main.resources.srcDirs) {
         exclude 'mcmod.info'
     }
+}
+
+jar {
+    // Sets the output directory of the mod's jar file
+    destinationDir = file 'output'
+
 }

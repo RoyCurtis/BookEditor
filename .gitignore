@@ -5,3 +5,4 @@ eclipse/
 .nb-gradle/profiles/private/aux-config
 .nb-gradle-properties
 .project
+.settings/
