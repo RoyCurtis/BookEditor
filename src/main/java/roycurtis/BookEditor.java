@@ -27,7 +27,10 @@ public class BookEditor
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         Logger    = event.getModLog();
-        ConfigDir = event.getModConfigurationDirectory();
+        ConfigDir = new File(event.getModConfigurationDirectory(), MODID);
+        
+        if ( !ConfigDir.exists() )
+            ConfigDir.mkdir();
     }
         
     @EventHandler

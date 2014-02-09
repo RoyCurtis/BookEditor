@@ -7,6 +7,7 @@ import io.netty.buffer.Unpooled;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.minecraft.client.Minecraft;
@@ -484,18 +485,28 @@ public class GuiScreenBookExtra extends GuiScreen
     {
         try
         {
-            File export       = new File(BookEditor.ConfigDir, "Books.txt");
-            FileWriter writer = new FileWriter(export);
-            
             for (int i = 0; i < bookTotalPages; i++)
             {
+                String fileName = String.format("Books%d.txt", i);
+                File export     = new File(BookEditor.ConfigDir, fileName);
                 
+                FileWriter writer = new FileWriter(export);
+                writer.write( bookPages.getStringTagAt(i) );
+                
+                writer.close();
             }
+            
+            infoLine = String.format( "Successfully wrote %d files (%s)", bookTotalPages, new Date() );
         }
         catch (IOException ex)
         {
             infoLine = EnumChatFormatting.RED + "Could not export book:\n" + ex.getMessage();
         }
+    }
+    
+    private void importBook()
+    {
+        
     }
 
     @SideOnly(Side.CLIENT)
