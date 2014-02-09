@@ -1,0 +1,6 @@
+.classpath
+.gradle
+build/
+.nb-gradle/profiles/private/aux-config
+.nb-gradle-properties
+.project
