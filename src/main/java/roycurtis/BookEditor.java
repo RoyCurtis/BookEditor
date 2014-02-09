@@ -9,8 +9,10 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import java.io.File;
 import java.lang.reflect.Field;
 import net.minecraft.client.gui.GuiScreenBook;
+import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntitySign;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.apache.logging.log4j.Logger;
@@ -48,9 +50,14 @@ public class BookEditor
     {
         Logger.trace("Open GUI event: %s", event.gui);
         
-        if ( !(event.gui instanceof GuiScreenBook) )
-            return;
+        if ( event.gui instanceof GuiScreenBook )
+            interceptBookGui(event);
+        else if (event.gui instanceof GuiEditSign)
+            interceptSignGui(event);              
+    }
 
+    private void interceptBookGui(GuiOpenEvent event)
+    {
         Logger.debug("Intercepting book open GUI");
 
         GuiScreenBook old = (GuiScreenBook) event.gui;
@@ -78,6 +85,31 @@ public class BookEditor
         catch (Exception ex)
         {
             Logger.error("Could not get data from GuiScreenBook", ex);
-        }        
+        } 
+    }
+
+    private void interceptSignGui(GuiOpenEvent event)
+    {
+        Logger.debug("Intercepting sign edit GUI");
+        
+        GuiEditSign old = (GuiEditSign) event.gui;
+        
+        Class<GuiEditSign> guiClass = GuiEditSign.class;
+        
+        try
+        {
+            Field fieldTileEntity = guiClass.getDeclaredField("tileSign");
+            //Field fieldTileEntity = guiClass.getDeclaredField("field_146848_f");
+            
+            fieldTileEntity.setAccessible(true);
+            Logger.debug("Tampered with GuiEditSign");
+
+            GuiEditSignExtra gui = new GuiEditSignExtra( (TileEntitySign) fieldTileEntity.get(old) );
+            event.gui = gui;
+        }
+        catch (Exception ex)
+        {
+            Logger.error("Could not get data from GuiScreenBook", ex);
+        } 
     }
 }

@@ -5,13 +5,11 @@ import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -355,6 +353,20 @@ public class GuiScreenBookExtra extends GuiScreen
 
     private void keyTypedInTitle(char typed, int lwjglKey)
     {
+        switch (typed)
+        {
+            // Pasting
+            case '\026':
+                bookTitle += GuiScreen.getClipboardString();
+                
+                if (bookTitle.length() >= 17)
+                    bookTitle  = bookTitle.substring(0, 16);
+                
+                updateButtons();
+                bookModified = true;
+                return;
+        }
+        
         switch (lwjglKey)
         {
             // Backspace
@@ -494,14 +506,17 @@ public class GuiScreenBookExtra extends GuiScreen
                 String fileName = String.format("Books%d.txt", i);
                 File exportFile = new File(BookEditor.ConfigDir, fileName);
                 
-                FileWriter writer = new FileWriter(exportFile);
-                writer.write( bookPages.getStringTagAt(i) );
-                writer.close();
+                FileOutputStream   stream   = new FileOutputStream(exportFile);
+                OutputStreamWriter output = new OutputStreamWriter(stream, Charset.forName("UTF-8").newEncoder());
+
+                output.write( bookPages.getStringTagAt(i) );
+                output.close();
+                stream.close();
             }
             
             infoLine = String.format( "Successfully wrote %d files (%s)", bookTotalPages, new Date() );            
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
             infoLine = EnumChatFormatting.RED + "Could not export book:\n" + ex.getMessage();
         }
@@ -523,7 +538,7 @@ public class GuiScreenBookExtra extends GuiScreen
                 if ( !importFile.exists() )
                     break;
                 
-                Scanner reader = new Scanner(importFile);
+                Scanner reader = new Scanner(importFile, "UTF-8");
                 String  page   = reader.useDelimiter("\\A").next().replace("\r", "");
                 
                 if (page.length() >= 256)
@@ -551,7 +566,7 @@ public class GuiScreenBookExtra extends GuiScreen
             sendBookToServer(false);
             infoLine = String.format( "Successfully imported %d (out of 50 max) pages (%s)", i, new Date() );
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
             infoLine = EnumChatFormatting.RED + "Could not import book:\n" + ex.getMessage();
         }
