@@ -20,7 +20,7 @@ import org.apache.logging.log4j.Logger;
 @Mod(modid = BookEditor.MODID, version = BookEditor.VERSION)
 public class BookEditor
 {
-    public static final String  MODID   = "BookEditor";
+    public static final String  MODID   = "bookeditor";
     public static final String  VERSION = "0.1";
     public static final Boolean DEV     = Boolean.parseBoolean( System.getProperty("development", "false") );
     
@@ -29,7 +29,8 @@ public class BookEditor
     public static File   SubDir;
     
     @EventHandler
-    public void preInit(FMLPreInitializationEvent event) {
+    public void preInit(FMLPreInitializationEvent event)
+    {
         Logger  = event.getModLog();
         BaseDir = new File(event.getModConfigurationDirectory(), MODID);
         

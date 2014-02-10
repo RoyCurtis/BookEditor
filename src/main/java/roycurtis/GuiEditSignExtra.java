@@ -70,10 +70,13 @@ public class GuiEditSignExtra extends GuiScreen
             return;
         
         if (clicked.id == 0)
+        {
             tileSign.markDirty();
             mc.displayGuiScreen(null);
+        }
     }
 
+    @Override
     protected void keyTyped(char typed, int lwjglKey)
     {
         switch (typed)

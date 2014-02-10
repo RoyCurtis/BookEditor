@@ -27,7 +27,6 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
-import static roycurtis.BookEditor.BaseDir;
 
 /**
  * Gui with book import/export functionality.
@@ -578,6 +577,7 @@ public class GuiScreenBookExtra extends GuiScreen
                 return;
             }
             
+            bookModified   = true;
             bookPages      = importedPages;
             bookTotalPages = i;
             currPage       = 0;
