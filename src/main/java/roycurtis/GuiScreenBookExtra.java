@@ -27,6 +27,7 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
+import static roycurtis.BookEditor.BaseDir;
 
 /**
  * Gui with book import/export functionality.
@@ -45,6 +46,7 @@ public class GuiScreenBookExtra extends GuiScreen
     private static final int ACTION_FINALIZE     = 5;
     private static final int ACTION_IMPORT       = 6;
     private static final int ACTION_EXPORT       = 7;
+    private static final int ACTION_CHANGE_DIR   = 8;
     
     private static final ResourceLocation bookGuiTextures = new ResourceLocation("textures/gui/book.png");
     
@@ -74,6 +76,7 @@ public class GuiScreenBookExtra extends GuiScreen
     private GuiButton buttonCancelSign;
     private GuiButton buttonImport;
     private GuiButton buttonExport;
+    private GuiButton buttonChangeDir;
 
     public GuiScreenBookExtra(EntityPlayer editingPlayer, ItemStack bookObj, boolean bookIsUnsigned)
     {
@@ -131,8 +134,9 @@ public class GuiScreenBookExtra extends GuiScreen
             buttonList.add(buttonFinalize   = new GuiButton(ACTION_FINALIZE, width / 2 - 100, 4 + bookImageHeight, 98, 20, I18n.format("book.finalizeButton")));
 
             // TODO: fix locale
-            buttonList.add(buttonImport = new GuiButton(ACTION_IMPORT, width / 2 - 100, 32 + bookImageHeight, 98, 20, "Import..."));
-            buttonList.add(buttonExport = new GuiButton(ACTION_EXPORT, width / 2 + 2, 32 + bookImageHeight, 98, 20, "Export..."));
+            buttonList.add(buttonImport    = new GuiButton(ACTION_IMPORT, width / 2 - 100, 32 + bookImageHeight, 98, 20, "Import..."));
+            buttonList.add(buttonExport    = new GuiButton(ACTION_EXPORT, width / 2 + 2, 32 + bookImageHeight, 98, 20, "Export..."));
+            buttonList.add(buttonChangeDir = new GuiButton(ACTION_CHANGE_DIR, width / 2 - 100, 64 + bookImageHeight, 200, 20, "Set Subdirectory..."));
         }
         else
         {
@@ -166,6 +170,7 @@ public class GuiScreenBookExtra extends GuiScreen
         {
             buttonImport.visible     = !bookGettingSigned;
             buttonExport.visible     = !bookGettingSigned;
+            buttonChangeDir.visible  = !bookGettingSigned;
             buttonSign.visible       = !bookGettingSigned;
             buttonCancelSign.visible = bookGettingSigned;
             
@@ -288,8 +293,11 @@ public class GuiScreenBookExtra extends GuiScreen
                 if (bookIsUnsigned)
                     exportBook();
                 break;
-                // TODO: add import and export
-                
+            
+            case ACTION_CHANGE_DIR:
+                if (bookIsUnsigned)
+                    changeDir();
+                break;                
         }
         
         updateButtons();
@@ -504,7 +512,13 @@ public class GuiScreenBookExtra extends GuiScreen
             for (int i = 0; i < bookTotalPages; i++)
             {
                 String fileName = String.format("Books%d.txt", i);
-                File exportFile = new File(BookEditor.ConfigDir, fileName);
+                
+                File exportFile;
+                
+                if (BookEditor.SubDir == null)
+                    exportFile = new File(BookEditor.BaseDir, fileName);
+                else
+                    exportFile = new File(BookEditor.SubDir, fileName);
                 
                 FileOutputStream   stream   = new FileOutputStream(exportFile);
                 OutputStreamWriter output = new OutputStreamWriter(stream, Charset.forName("UTF-8").newEncoder());
@@ -533,7 +547,12 @@ public class GuiScreenBookExtra extends GuiScreen
             for (i = 0; i < 50; i++)
             {
                 String fileName = String.format("Books%d.txt", i);
-                File importFile = new File(BookEditor.ConfigDir, fileName);
+                File importFile;
+                
+                if (BookEditor.SubDir == null)
+                    importFile = new File(BookEditor.BaseDir, fileName);
+                else
+                    importFile = new File(BookEditor.SubDir, fileName);
                 
                 if ( !importFile.exists() )
                     break;
@@ -572,6 +591,45 @@ public class GuiScreenBookExtra extends GuiScreen
         }
     }
 
+    private void changeDir()
+    {
+        String subdir;
+        
+        if (BookEditor.SubDir == null)
+            subdir = "";
+        else
+            subdir = BookEditor.SubDir.getName();
+        
+        GuiScreenPrompt prompt = new GuiScreenPrompt(this, "Define book subdirectory", subdir, new GuiScreenPrompt.GuiPromptCallback()
+        {
+            @Override
+            public void onConfirm(String data)
+            {
+                if ("".equals(data))
+                {
+                    BookEditor.SubDir = null;
+                    infoLine = String.format( "Cleared subdirectory" );
+                    return;
+                }
+                
+                BookEditor.SubDir = new File(BookEditor.BaseDir, data);
+                
+                if ( !BookEditor.SubDir.exists() )
+                    BookEditor.SubDir.mkdir();
+                
+                infoLine = String.format( "Changed subdir to '%s'", data );
+            }
+
+            @Override
+            public void onCancel()
+            {
+            }
+        });
+        
+        mc.displayGuiScreen(prompt);
+    }
+    
+            
     @SideOnly(Side.CLIENT)
     static class NextPageButton extends GuiButton
     {

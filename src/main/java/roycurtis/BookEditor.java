@@ -20,19 +20,21 @@ import org.apache.logging.log4j.Logger;
 @Mod(modid = BookEditor.MODID, version = BookEditor.VERSION)
 public class BookEditor
 {
-    public static final String MODID = "BookEditor";
-    public static final String VERSION = "0.1";
+    public static final String  MODID   = "BookEditor";
+    public static final String  VERSION = "0.1";
+    public static final Boolean DEV     = Boolean.parseBoolean( System.getProperty("development", "false") );
     
     public static Logger Logger;
-    public static File   ConfigDir;
+    public static File   BaseDir;
+    public static File   SubDir;
     
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        Logger    = event.getModLog();
-        ConfigDir = new File(event.getModConfigurationDirectory(), MODID);
+        Logger  = event.getModLog();
+        BaseDir = new File(event.getModConfigurationDirectory(), MODID);
         
-        if ( !ConfigDir.exists() )
-            ConfigDir.mkdir();
+        if ( !BaseDir.exists() )
+            BaseDir.mkdir();
     }
         
     @EventHandler
@@ -66,13 +68,20 @@ public class BookEditor
         
         try
         {
+            Field fieldPlayer, fieldStack, fieldUnsigned;
             
-            Field fieldPlayer   = guiClass.getDeclaredField("editingPlayer");
-            Field fieldStack    = guiClass.getDeclaredField("bookObj");
-            Field fieldUnsigned = guiClass.getDeclaredField("bookIsUnsigned");
-            //Field fieldPlayer   = guiClass.getDeclaredField("field_146468_g");
-            //Field fieldStack    = guiClass.getDeclaredField("field_146474_h");
-            //Field fieldUnsigned = guiClass.getDeclaredField("field_146475_i");
+            if (DEV)
+            {
+                fieldPlayer   = guiClass.getDeclaredField("editingPlayer");
+                fieldStack    = guiClass.getDeclaredField("bookObj");
+                fieldUnsigned = guiClass.getDeclaredField("bookIsUnsigned");
+            }
+            else
+            {
+                fieldPlayer   = guiClass.getDeclaredField("field_146468_g");
+                fieldStack    = guiClass.getDeclaredField("field_146474_h");
+                fieldUnsigned = guiClass.getDeclaredField("field_146475_i");
+            }
             
             fieldPlayer.setAccessible(true);
             fieldStack.setAccessible(true);
@@ -98,8 +107,11 @@ public class BookEditor
         
         try
         {
-            Field fieldTileEntity = guiClass.getDeclaredField("tileSign");
-            //Field fieldTileEntity = guiClass.getDeclaredField("field_146848_f");
+            Field fieldTileEntity;
+            if (DEV)
+                fieldTileEntity = guiClass.getDeclaredField("tileSign");
+            else
+                fieldTileEntity = guiClass.getDeclaredField("field_146848_f");
             
             fieldTileEntity.setAccessible(true);
             Logger.debug("Tampered with GuiEditSign");
