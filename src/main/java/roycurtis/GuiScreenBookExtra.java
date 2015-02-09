@@ -20,6 +20,7 @@ import net.minecraft.util.ChatAllowedCharacters;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.io.File;
@@ -188,17 +189,6 @@ public class GuiScreenBookExtra extends GuiScreen
         if (bookPages == null)
             return;
         
-        // Purges 0-length pages
-//        while (bookPages.tagCount() > 1)
-//        {
-//            String contents = bookPages.getStringTagAt(bookPages.tagCount() - 1);
-//
-//            if (contents.length() != 0)
-//                break;
-//
-//            bookPages.removeTag(bookPages.tagCount() - 1);
-//        }
-        
         // ???
         if (bookObj.hasTagCompound())
             bookObj.getTagCompound().setTag("pages", bookPages);
@@ -336,7 +326,29 @@ public class GuiScreenBookExtra extends GuiScreen
             keyTypedInBook(typed, lwjglKey);
     }
 
-    private void keyTypedInBook(char typed, int lwjglKey) {
+    @Override
+    public void handleMouseInput()
+    {
+        super.handleMouseInput();
+        int wheelDelta = Mouse.getEventDWheel() / 120; // "120" == one mousewheel tick
+
+        if (wheelDelta == 0) return;
+
+        boolean shift = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+
+        currPage += wheelDelta;
+
+        if (shift && bookTotalPages > 4)
+            currPage += wheelDelta * 4;
+
+        if (currPage < 0)
+            currPage = bookTotalPages - 1;
+        else if (currPage >= bookTotalPages)
+            currPage = 0;
+    }
+
+    private void keyTypedInBook(char typed, int lwjglKey)
+    {
         switch (typed)
         {
             // Pasting
@@ -504,7 +516,7 @@ public class GuiScreenBookExtra extends GuiScreen
             fontRendererObj.drawSplitString(linePageText, i - bookImageWidth + 36, j + 16 + 16, 116, 0);
         }
         
-        String lineEditor = "BookEditor";
+        String lineEditor = EnumChatFormatting.DARK_GRAY + "" + EnumChatFormatting.BOLD + "B o o k E d i t o r";
         int k = fontRendererObj.getStringWidth(lineEditor);
         int l = fontRendererObj.getStringWidth(infoLine);
         fontRendererObj.drawString(lineEditor, i + bookImageWidth - k - 44, j + 16, 0);
@@ -586,10 +598,13 @@ public class GuiScreenBookExtra extends GuiScreen
                 String page = reader.hasNext()
                     ? reader.useDelimiter("\\A").next().replace("\r", "")
                     : "";
-                
-                if (page.length() > 256)
+
+                int length = page.length();
+                if (length > 256)
                 {
-                    infoLine = EnumChatFormatting.RED + String.format("Page %d has too many characters (limit 255)", i);
+                    infoLine = EnumChatFormatting.RED + String.format(
+                            "Page %d has %d too many characters. (limit 255, actual %d, file %s)",
+                            i+1, length - 255, length, fileName);
                     reader.close();
                     return;            
                 }
