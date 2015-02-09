@@ -6,3 +6,5 @@ eclipse/
 .nb-gradle-properties
 .project
 .settings/
+.idea
+BookEditor.iml

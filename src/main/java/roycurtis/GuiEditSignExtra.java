@@ -112,7 +112,7 @@ public class GuiEditSignExtra extends GuiScreen
         String currentText = tileSign.signText[line];
         String newText     = currentText + append;
         
-        if (newText.length() >= 15)
+        if (newText.length() > 15)
             newText = newText.substring(0, 14);
         
         tileSign.signText[line] = newText;

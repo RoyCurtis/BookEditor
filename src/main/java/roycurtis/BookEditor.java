@@ -15,6 +15,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntitySign;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Mod(modid = BookEditor.MODID, version = BookEditor.VERSION)
@@ -31,7 +32,7 @@ public class BookEditor
     @EventHandler
     public void preInit(FMLPreInitializationEvent event)
     {
-        Logger  = event.getModLog();
+        Logger  = LogManager.getFormatterLogger(MODID);
         BaseDir = new File(event.getModConfigurationDirectory(), MODID);
         
         if ( !BaseDir.exists() )

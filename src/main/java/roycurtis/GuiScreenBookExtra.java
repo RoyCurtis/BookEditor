@@ -6,10 +6,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -235,71 +239,78 @@ public class GuiScreenBookExtra extends GuiScreen
     @Override
     protected void actionPerformed(GuiButton clicked)
     {
-        if (!clicked.enabled)
-            return;
-        
-        switch (clicked.id)
+        try
         {
-            case ACTION_DONE_READING:
-                mc.displayGuiScreen(null);
-                sendBookToServer(false);
-                break;
-                
-            case ACTION_NEXT:
-                if (currPage < bookTotalPages - 1)
-                    currPage += 1;
-                else if (bookIsUnsigned)
-                {
-                    addNewPage();
+            if (!clicked.enabled)
+                return;
+            
+            switch (clicked.id)
+            {
+                case ACTION_DONE_READING:
+                    mc.displayGuiScreen(null);
+                    sendBookToServer(false);
+                    break;
+                    
+                case ACTION_NEXT:
                     if (currPage < bookTotalPages - 1)
                         currPage += 1;
-                }
-                break;
-                
-            case ACTION_PREV:
-                if (currPage > 0)
-                    currPage -= 1;
-                break;
-                
-            case ACTION_SIGN:
-                if (bookIsUnsigned)
-                {
-                    // Workaround for finalize bug
-                    updateCount = 0;
-                    bookGettingSigned = true;
-                }
-                break;
-                
-            case ACTION_CANCEL_SIGN:
-                if (bookGettingSigned)
-                    bookGettingSigned = false;
-                break;
-                
-            case ACTION_FINALIZE:
-                if (bookGettingSigned)
-                {
-                    sendBookToServer(true);
-                    mc.displayGuiScreen(null);
-                }
-                break;
-                
-            case ACTION_IMPORT:
-                if (bookIsUnsigned)
-                    importBook();
-                break;
-                
-            case ACTION_EXPORT:
-                if (bookIsUnsigned)
-                    exportBook();
-                break;
+                    else if (bookIsUnsigned)
+                    {
+                        addNewPage();
+                        if (currPage < bookTotalPages - 1)
+                            currPage += 1;
+                    }
+                    break;
+                    
+                case ACTION_PREV:
+                    if (currPage > 0)
+                        currPage -= 1;
+                    break;
+                    
+                case ACTION_SIGN:
+                    if (bookIsUnsigned)
+                    {
+                        // Workaround for finalize bug
+                        updateCount = 0;
+                        bookGettingSigned = true;
+                    }
+                    break;
+                    
+                case ACTION_CANCEL_SIGN:
+                    if (bookGettingSigned)
+                        bookGettingSigned = false;
+                    break;
+                    
+                case ACTION_FINALIZE:
+                    if (bookGettingSigned)
+                    {
+                        sendBookToServer(true);
+                        mc.displayGuiScreen(null);
+                    }
+                    break;
+                    
+                case ACTION_IMPORT:
+                    if (bookIsUnsigned)
+                        importBook();
+                    break;
+                    
+                case ACTION_EXPORT:
+                    if (bookIsUnsigned)
+                        exportBook();
+                    break;
+                    
+                case ACTION_CHANGE_DIR:
+                    if (bookIsUnsigned)
+                        changeDir();
+                    break;
+            }
             
-            case ACTION_CHANGE_DIR:
-                if (bookIsUnsigned)
-                    changeDir();
-                break;                
+            updateButtons();                
         }
-        
-        updateButtons();
+        catch (IOException ex)
+        {
+            BookEditor.Logger.error("Error handling GUI", ex);
+        }
     }
 
     private void addNewPage()
@@ -504,8 +515,11 @@ public class GuiScreenBookExtra extends GuiScreen
         super.drawScreen(paramInt1, paramInt2, paramFloat);
     }
 
-    private void exportBook()
+    private void exportBook() throws IOException
     {
+        FileOutputStream   stream = null;
+        OutputStreamWriter output = null;
+        
         try
         {
             for (int i = 0; i < bookTotalPages; i++)
@@ -519,24 +533,37 @@ public class GuiScreenBookExtra extends GuiScreen
                 else
                     exportFile = new File(BookEditor.SubDir, fileName);
                 
-                FileOutputStream   stream   = new FileOutputStream(exportFile);
-                OutputStreamWriter output = new OutputStreamWriter(stream, Charset.forName("UTF-8").newEncoder());
-
-                output.write( bookPages.getStringTagAt(i) );
+                stream = new FileOutputStream(exportFile);
+                output = new OutputStreamWriter(stream, Charset.forName("UTF-8"));
+                
+                String page = bookPages.getStringTagAt(i);
+                BookEditor.Logger.info("Raw export: %s", page);
+                output.write(page);
                 output.close();
-                stream.close();
             }
             
             infoLine = String.format( "Successfully wrote %d files (%s)", bookTotalPages, new Date() );            
         }
         catch (Exception ex)
         {
+            BookEditor.Logger.error("Error exporting:", ex);
             infoLine = EnumChatFormatting.RED + "Could not export book:\n" + ex.getMessage();
+        }
+        finally
+        {
+            if (output != null)
+                output.close();
+            
+            if (stream != null)
+                stream.close();
         }
     }
     
     private void importBook()
     {
+        // TODO: fix charset detection
+        Scanner reader = null;
+        
         try
         {
             int i;
@@ -556,10 +583,11 @@ public class GuiScreenBookExtra extends GuiScreen
                 if ( !importFile.exists() )
                     break;
                 
-                Scanner reader = new Scanner(importFile, "UTF-8");
-                String  page   = reader.useDelimiter("\\A").next().replace("\r", "");
+                reader = new Scanner(importFile, "UTF-8");
                 
-                if (page.length() >= 256)
+                String page = reader.useDelimiter("\\A").next().replace("\r", "");
+                
+                if (page.length() > 256)
                 {
                     infoLine = EnumChatFormatting.RED + String.format("Page %d has too many characters (limit 255)", i);
                     reader.close();
@@ -567,7 +595,6 @@ public class GuiScreenBookExtra extends GuiScreen
                 }
                 
                 importedPages.appendTag( new NBTTagString(page) );
-
                 reader.close();
             }
             
@@ -587,7 +614,13 @@ public class GuiScreenBookExtra extends GuiScreen
         }
         catch (Exception ex)
         {
+            BookEditor.Logger.error("Error importing:", ex);
             infoLine = EnumChatFormatting.RED + "Could not import book:\n" + ex.getMessage();
+        }
+        finally
+        {
+            if (reader != null)
+                reader.close();
         }
     }
 
