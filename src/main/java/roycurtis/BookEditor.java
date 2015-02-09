@@ -6,17 +6,16 @@ import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import java.io.File;
-import java.lang.reflect.Field;
 import net.minecraft.client.gui.GuiScreenBook;
-import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntitySign;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.File;
+import java.lang.reflect.Field;
 
 @Mod(modid = BookEditor.MODID, version = BookEditor.VERSION)
 public class BookEditor
@@ -28,13 +27,13 @@ public class BookEditor
     public static Logger Logger;
     public static File   BaseDir;
     public static File   SubDir;
-    
+
     @EventHandler
     public void preInit(FMLPreInitializationEvent event)
     {
         Logger  = LogManager.getFormatterLogger(MODID);
         BaseDir = new File(event.getModConfigurationDirectory(), MODID);
-        
+
         if ( !BaseDir.exists() )
             BaseDir.mkdir();
     }
@@ -56,8 +55,6 @@ public class BookEditor
         
         if ( event.gui instanceof GuiScreenBook )
             interceptBookGui(event);
-        else if (event.gui instanceof GuiEditSign)
-            interceptSignGui(event);              
     }
 
     private void interceptBookGui(GuiOpenEvent event)
@@ -91,34 +88,6 @@ public class BookEditor
             Logger.debug("Tampered with GuiScreenBook");
 
             GuiScreenBookExtra gui = new GuiScreenBookExtra( (EntityPlayer) fieldPlayer.get(old), (ItemStack) fieldStack.get(old), fieldUnsigned.getBoolean(old) );
-            event.gui = gui;
-        }
-        catch (Exception ex)
-        {
-            Logger.error("Could not get data from GuiScreenBook", ex);
-        } 
-    }
-
-    private void interceptSignGui(GuiOpenEvent event)
-    {
-        Logger.debug("Intercepting sign edit GUI");
-        
-        GuiEditSign old = (GuiEditSign) event.gui;
-        
-        Class<GuiEditSign> guiClass = GuiEditSign.class;
-        
-        try
-        {
-            Field fieldTileEntity;
-            if (DEV)
-                fieldTileEntity = guiClass.getDeclaredField("tileSign");
-            else
-                fieldTileEntity = guiClass.getDeclaredField("field_146848_f");
-            
-            fieldTileEntity.setAccessible(true);
-            Logger.debug("Tampered with GuiEditSign");
-
-            GuiEditSignExtra gui = new GuiEditSignExtra( (TileEntitySign) fieldTileEntity.get(old) );
             event.gui = gui;
         }
         catch (Exception ex)
