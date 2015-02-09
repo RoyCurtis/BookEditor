@@ -4,16 +4,6 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
-import java.util.Date;
-import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -31,6 +21,14 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.util.Date;
+import java.util.Scanner;
 
 /**
  * Gui with book import/export functionality.
@@ -191,15 +189,15 @@ public class GuiScreenBookExtra extends GuiScreen
             return;
         
         // Purges 0-length pages
-        while (bookPages.tagCount() > 1)
-        {
-            String contents = bookPages.getStringTagAt(bookPages.tagCount() - 1);
-            
-            if (contents.length() != 0)
-                break;
-            
-            bookPages.removeTag(bookPages.tagCount() - 1);
-        }
+//        while (bookPages.tagCount() > 1)
+//        {
+//            String contents = bookPages.getStringTagAt(bookPages.tagCount() - 1);
+//
+//            if (contents.length() != 0)
+//                break;
+//
+//            bookPages.removeTag(bookPages.tagCount() - 1);
+//        }
         
         // ???
         if (bookObj.hasTagCompound())
@@ -584,8 +582,10 @@ public class GuiScreenBookExtra extends GuiScreen
                     break;
                 
                 reader = new Scanner(importFile, "UTF-8");
-                
-                String page = reader.useDelimiter("\\A").next().replace("\r", "");
+
+                String page = reader.hasNext()
+                    ? reader.useDelimiter("\\A").next().replace("\r", "")
+                    : "";
                 
                 if (page.length() > 256)
                 {
@@ -607,7 +607,10 @@ public class GuiScreenBookExtra extends GuiScreen
             bookModified   = true;
             bookPages      = importedPages;
             bookTotalPages = i;
-            currPage       = 0;
+
+            currPage = currPage >= bookTotalPages
+                ? bookTotalPages - 1
+                : currPage;
             
             sendBookToServer(false);
             infoLine = String.format( "Successfully imported %d (out of 50 max) pages (%s)", i, new Date() );
@@ -615,7 +618,7 @@ public class GuiScreenBookExtra extends GuiScreen
         catch (Exception ex)
         {
             BookEditor.Logger.error("Error importing:", ex);
-            infoLine = EnumChatFormatting.RED + "Could not import book:\n" + ex.getMessage();
+            infoLine = EnumChatFormatting.RED + "Could not import book:\n" + ex.toString();
         }
         finally
         {
